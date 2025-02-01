@@ -1,0 +1,10 @@
+#ingore python .venv
+.venv
+
+#ignore job_scraper.log
+job_scraper.log
+
+
+#ingore database files
+jobs.duckdb
+jobs.sqlite
