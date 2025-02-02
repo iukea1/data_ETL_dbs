@@ -1,34 +1,27 @@
+# Enhanced JobSpy ETL Pipeline
 
-I'll help you create a comprehensive README.md file for your JobSpy ETL project. Based on the runner.py code, here's a well-structured README:
+A robust and scalable ETL (Extract, Transform, Load) pipeline for scraping and analyzing job postings from multiple job boards including LinkedIn, Indeed, Glassdoor & ZipRecruiter.
 
-```markdown:README.md
-# JobSpy ETL Pipeline
+## Enhanced Features
 
-A robust ETL (Extract, Transform, Load) pipeline for scraping and analyzing job postings from multiple job boards including LinkedIn, Indeed, Glassdoor & ZipRecruiter.
-
-## Features
-
-- Multi-source job scraping from major job boards
-- Intelligent rate limiting and proxy support
-- Dual database storage (DuckDB and SQLite)
-- Built-in analytics and reporting
-- Batch processing for large datasets
-- Robust error handling and logging
+- **Multi-source Job Scraping**: Parallel scraping from major job boards
+- **Intelligent Rate Limiting**: Per-site rate limiting with automatic throttling
+- **Dual Database Storage**: 
+  - SQLite for reliable persistent storage
+  - DuckDB for high-performance analytics
+- **Parallel Processing**: Multi-threaded job scraping with configurable worker count
+- **Built-in Analytics**: Automated generation of salary and company analytics
+- **Robust Error Handling**: 
+  - Automatic retries with exponential backoff
+  - Per-site error isolation
+  - Comprehensive logging
+- **Data Export**: Automated CSV exports of analytics results
 
 ## Requirements
 
-```python
+```bash
 pip install -r requirements.txt
 ```
-
-Required packages:
-
-- python-jobspy
-- duckdb
-- pandas
-- sqlite3
-- beautifulsoup4
-- logging
 
 ## Quick Start
 
@@ -38,13 +31,53 @@ from runner import JobScraperETL
 # Initialize the ETL pipeline
 etl = JobScraperETL()
 
-# Run the complete pipeline
-analytics_results = etl.run_etl_pipeline()
+# Run the complete pipeline with 4 worker threads
+etl.run_etl_pipeline(max_workers=4)
 ```
+
+## Configuration
+
+Key configuration parameters can be adjusted in the JobScraperETL class:
+
+```python
+# Rate limiting settings
+self.max_requests = 45  # Maximum requests per time window
+self.window_size = 60   # Time window in seconds
+
+# Worker threads for parallel processing
+max_workers = 4  # Adjust based on your system's capabilities
+
+# Job search parameters
+self.search_locations = [
+    "New York, NY", "San Francisco, CA", "Seattle, WA",
+    "Austin, TX", "Boston, MA", "Chicago, IL"
+]
+
+self.job_titles = [
+    "software engineer", "software developer", 
+    "data scientist", "machine learning engineer",
+    "data engineer", "full stack developer"
+]
+```
+
+## Analytics Output
+
+The pipeline automatically generates two types of analytics:
+
+### Salary Analytics (salary_analytics.csv)
+- Average, minimum, and maximum salaries by location and job type
+- Job count per location/job type combination
+- Salary trends analysis
+
+### Company Analytics (company_analytics.csv)
+- Total job postings per company
+- Number of unique locations per company
+- Diversity of job types
+- Average salary offerings
 
 ## Database Schema
 
-The pipeline maintains two synchronized databases (DuckDB and SQLite) with the following schema:
+The pipeline maintains synchronized SQLite and DuckDB databases with the following schema:
 
 ```sql
 CREATE TABLE jobs (
@@ -64,100 +97,31 @@ CREATE TABLE jobs (
     salary_max_amount REAL,
     salary_currency TEXT,
     date_posted TIMESTAMP,
-    is_remote INTEGER,
+    is_remote BOOLEAN,
     job_function TEXT,
     company_industry TEXT,
     source_site TEXT,
     scrape_date TIMESTAMP,
     UNIQUE(job_url, company, title)
-);
+)
 ```
-
-## Analytics Views
-
-The pipeline includes pre-built analytical views:
-
-### Salary Analytics
-
-```sql
-CREATE VIEW salary_analytics AS
-SELECT 
-    location_city,
-    job_type,
-    COUNT(*) as job_count,
-    AVG(salary_min_amount) as avg_min_salary,
-    AVG(salary_max_amount) as avg_max_salary,
-    MIN(salary_min_amount) as min_salary,
-    MAX(salary_max_amount) as max_salary
-FROM jobs
-WHERE salary_min_amount IS NOT NULL
-GROUP BY location_city, job_type;
-```
-
-### Company Analytics
-
-```sql
-CREATE VIEW company_analytics AS
-SELECT 
-    company,
-    COUNT(*) as total_jobs,
-    COUNT(DISTINCT location_city) as locations,
-    COUNT(DISTINCT job_type) as job_types,
-    AVG(CASE WHEN salary_min_amount IS NOT NULL THEN salary_min_amount END) as avg_min_salary
-FROM jobs
-GROUP BY company;
-```
-
-## Configuration
-
-Key configuration parameters:
-
-```python
-self.request_limit = 45  # Maximum requests per time window
-self.time_window = 60    # Time window in seconds
-self.batch_size = 1000   # Records per batch
-
-# Supported locations
-self.search_locations = [
-    "New York, NY", "San Francisco, CA", "Seattle, WA", 
-    "Austin, TX", "Boston, MA", "Chicago, IL"
-]
-
-# Job titles to search
-self.job_titles = [
-    "software engineer", "software developer", 
-    "data scientist", "machine learning engineer",
-    "data engineer", "full stack developer"
-]
-```
-
-## Logging
-
-The pipeline maintains detailed logs in `job_scraper.log`, capturing:
-
-- Scraping progress and results
-- Database operations
-- Errors and warnings
-- Rate limiting events
-
-## Rate Limiting
-
-The pipeline implements intelligent rate limiting:
-
-- Maximum 45 requests per 60-second window
-- Automatic throttling at 80% capacity
-- Random delays between requests
-- Proxy support for distributed scraping
 
 ## Error Handling
 
-The pipeline includes comprehensive error handling:
+The pipeline implements comprehensive error handling:
 
-- Connection error recovery
-- Data validation
-- Duplicate prevention
-- Rate limit management
-- Batch processing recovery
+- **Rate Limiting**: Automatic throttling when approaching API limits
+- **Retries**: Automatic retries with exponential backoff for transient failures
+- **Isolation**: Errors in one scraping task don't affect others
+- **Logging**: Detailed logging of all operations and errors
+
+## Logging
+
+Logs are written to `job_scraper.log` and include:
+- Scraping progress and results
+- Database operations
+- Rate limiting events
+- Errors and warnings
 
 ## Contributing
 
@@ -170,10 +134,4 @@ The pipeline includes comprehensive error handling:
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-```
-
-This README provides a comprehensive overview of your JobSpy ETL pipeline, including its features, setup instructions, database schema, and configuration options. The SQL schema section clearly shows the structure of your data storage, while the analytics views demonstrate the built-in analytical capabilities.
-
-Would you like me to expand on any particular section or add additional information?
 ```
